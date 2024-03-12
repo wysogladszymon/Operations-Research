@@ -1,18 +1,13 @@
 from graph import Graph
 from djikstra import djikstra
 
-def path_to_graph(path) -> Graph:
-    graph = {}
-    for node, (previous, distance) in path.items():
-        if previous is not None:
-            if previous not in graph:
-              graph[previous] = []
-            graph[previous].append((node, distance))
-            if node not in graph:
-              graph[node] = []
-            graph[node].append((previous, distance))
-    return Graph(graph)
-
+def path2graph(path):
+  g = {k : [] for k in path}
+  for node ,(previous, distance) in path.items():
+    if previous is not None:
+      g[node].append((previous, distance - path[previous][1]))
+      g[previous].append((node, distance - path[previous][1]))
+  return Graph(g)
 
 def main():  
   g = Graph({
@@ -29,9 +24,7 @@ def main():
 })
   path = djikstra(g)
   # print(path)
-  tree = path_to_graph(path)
-  print(tree)
-  
-
+  g = path2graph(path)
+  print(g)
 if __name__ == '__main__':
   main()

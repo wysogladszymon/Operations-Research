@@ -24,7 +24,7 @@ def djikstra(g: Graph, s=0):
     # jeżeli algorytm będzie trwał dalej, to wybierz najbliższy nieodwiedzony wierzchołek
     if unvisited:
       u = min(unvisited, key=lambda node: distance[node][1])
-      
+  
   return distance
       
   
