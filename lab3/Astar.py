@@ -1,4 +1,4 @@
-import math
+
 import pygame
 import numpy as np
 from typing import List
@@ -52,12 +52,15 @@ class Node:
   def make_path(self):
     self.color = PURPLE
     
-  def make_barrier(self):
-    self.color = BLACK
-    
   def make_pending(self):
     self.color = GREEN
     
+  def make_barrier(self):
+    self.color = BLACK
+
+  def is_barrier(self):
+    return self.color == BLACK
+  
   def is_start(self):
     return self.color == ORANGE
     
@@ -65,10 +68,7 @@ class Node:
     return self.color == TURQUOISE
   
   def is_visited(self):
-    return self.color == RED
-    
-  def is_barrier(self):
-    return self.color == BLACK
+    return self.color == RED  
     
   def is_pending(self):
     return self.color == GREEN 
@@ -164,6 +164,9 @@ class Node:
         
   
 def h(node : Node, nodeEnd : Node):
+  return np.sqrt((node.col - nodeEnd.col)**2 + (node.row - nodeEnd.row)**2) - 1
+
+def d(node : Node, nodeEnd : Node):
   return np.sqrt((node.col - nodeEnd.col)**2 + (node.row - nodeEnd.row)**2)
 
 def draw_grid(win, rows, width):
@@ -198,66 +201,76 @@ def draw(win, grid, rows, width):
 
 def Astar(draw, start : Node, end : Node, grid):
   start.distance = 0
-  pending = set() # dict neighbor : parent 
+  pending = set() 
   node = start
-  i = 0
   while node != end:
-    neighbors : List[Node] = node.update_neighbors(grid)
-    i+=1
+    neighbors : List[Node] = node.update_neighbors(grid) # pobieramy nieodwiedzonych sąsiadów
     for neighbor in neighbors:
-      newDistance = node.distance + h(node, neighbor)
-      #nadpisujemy wartość
-      if newDistance < neighbor.distance:
+      newDistance = node.distance + d(node, neighbor) #dla każdego sąsiada jego odległość od początku
+      if newDistance < neighbor.distance: # zabezpieczenie, jeżeli był już pending
+        # natępuje tu wpisanie odległości od startu i szacowanej odległości do końca, oraz dodanie do pending
         neighbor.distance = newDistance
         neighbor.heuristic = h(neighbor, end)
-        pending.add((neighbor, node))
+        pending.add(neighbor)
+        #graficzne oznaczenie, że jest pending
         if neighbor != end:
           neighbor.make_pending()
-      elif newDistance == neighbor.distance and h(end, neighbor) < neighbor.heuristic:
-        neighbor.heuristic = h(neighbor, end)
-        pending.add((neighbor, node))
-        if neighbor != end:
-          neighbor.make_pending()
+      #narysowanie zmian, nieistotne z kwestii algorytmu
       draw()
+    #kolejne oznaczenie dla grafiki, że sąsiedzi węzła zostali odwiedzeni (Czerwony kolor)
     if node != start:
       node.make_visited()
+
+    #poszukiwanie minimum funkcji f = g + h
     min = float('inf')
-    pair = None
+    newNode = None
     minHeuristic = float('inf')
     for p in pending:
-      newHeuristic = p[0].heuristic
-      newDistance = newHeuristic + p[0].distance
+      newHeuristic = p.heuristic
+      newDistance = newHeuristic + p.distance
+      #jezeli znajdziemy minimum, to je przechowujemy
       if newDistance < min:
         min = newDistance
-        pair = p
-        minHeuristic = newHeuristic   
+        newNode = p
+        minHeuristic = newHeuristic
+      # charakteryzowanie, żeby najpierw szukał węzła o mniejszej heurystyce, w przypadku gdy odległości są równe,
+      # ponieważ ona szacuje koszt dotarcia   
       elif newDistance == min and newHeuristic < minHeuristic:
         min = newDistance
-        pair = p
+        newNode = p
         minHeuristic = newHeuristic
-    if pair is None:
-      return float('inf')
+    #jeżeli nie ma już węzłów do odwiedzenia, to kończymy
+    if newNode is None:
+      return float('inf'), []
       
-    pending.remove(pair)
-    node = pair[0]
+    pending.remove(newNode)
+    node = newNode
+
+  # część druga, rysowanie ścieżki i zwrot wyniku
   res = node.distance
   draw()
   
   # draw path
+  path = [end]
+  # pomysł - iteracyjnie prszechodzimy od końca, po wierzchołkach, które zostały odwiedzone 
+  # i dodajemy do ścieżki te z minimalnym dystansem do startu
   while node != start:
     neighbors : List[Node] = node.getPath(grid)
     min = float('inf')
-    pair = None
+    p = None
+    # szukamy minimum, do którego przejdziemy w następnym kroku
     for neighbor in neighbors:
       if neighbor.distance < min:
         min = neighbor.distance
-        pair = (neighbor, node)
-    if pair is None:
+        p = neighbor
+    if p is None:
       break
-    node = pair[0]
+    node = p
     if node != start:
       node.make_path()
-  return res
+    path.append(node)
+  #zwróć długość ścieżki i ścieżkę
+  return res, path[::-1]
 
 def main():
   repeat = True
@@ -311,12 +324,13 @@ def main():
 
         # if space was clicked, run the algorithm
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and start and end:
-          length = Astar(lambda: draw(WINDOW, grid, rows, WIDTH), start, end, grid)
+          length, path = Astar(lambda: draw(WINDOW, grid, rows, WIDTH), start, end, grid)
           if length == float('inf'):
             print("Nie znaleziono ścieżki")
             pygame.display.set_caption("Nie znaleziono ścieżki")
             break
           print("Najkrótsza ścieżka ma długość: ", "{:.2f}".format(length))
+          print("Ścieżka: ", path)
           pygame.display.set_caption("Najkrótsza ścieżka ma długość: {:.2f}".format(length))
     pygame.quit()
 if __name__ == '__main__':
