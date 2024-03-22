@@ -1,12 +1,323 @@
 import math
 import pygame
+import numpy as np
+from typing import List
 
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 255, 0)
+YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+PURPLE = (128, 0, 128)
+ORANGE = (255, 165 ,0)
+GREY = (128, 128, 128)
+TURQUOISE = (64, 224, 208)
+
+class Node:
+  def __init__(self, row, col, width, total_rows):
+    self.row = row
+    self.col = col
+    self.x = row * width
+    self.y = col * width
+    self.color = WHITE
+    self.neighbors = []
+    self.width = width
+    self.total_rows = total_rows
+    self.heuristic = float('inf')
+    self.distance = float('inf')
+    
+    
+  def get_pos(self):
+    return self.row, self.col
+  
+  def draw(self, window):
+    pygame.draw.rect(window, self.color, (self.x, self.y, self.width, self.width))
+  
+  def get_color(self):
+    return self.color
+  
+  def reset(self):
+    self.color = WHITE
+    
+  def make_start(self):
+    self.color = ORANGE
+    
+  def make_end(self):
+    self.color = TURQUOISE
+  
+  def make_visited(self):
+    self.color = RED
+  
+  def make_path(self):
+    self.color = PURPLE
+    
+  def make_barrier(self):
+    self.color = BLACK
+    
+  def make_pending(self):
+    self.color = GREEN
+    
+  def is_start(self):
+    return self.color == ORANGE
+    
+  def is_end(self):
+    return self.color == TURQUOISE
+  
+  def is_visited(self):
+    return self.color == RED
+    
+  def is_barrier(self):
+    return self.color == BLACK
+    
+  def is_pending(self):
+    return self.color == GREEN 
+  
+  def is_blank(self):
+    return self.color == WHITE
+  
+  def update_neighbors(self, grid):
+    self.neighbors = []
+    # top neighbors 
+    if self.row > 0:
+      mid = grid[self.row - 1][self.col]
+      if mid.is_blank() or mid.is_end() or mid.is_pending():
+        self.neighbors.append(mid)
+      if self.col > 0:
+        left = grid[self.row - 1][self.col - 1]
+        if left.is_blank() or left.is_end() or left.is_pending():
+          self.neighbors.append(left)
+      if self.col < self.total_rows - 1:
+        right = grid[self.row - 1][self.col + 1]
+        if right.is_blank() or right.is_end() or right.is_pending():
+          self.neighbors.append(right)
+    # bottom neighbors
+    if self.row < self.total_rows - 1:
+      mid = grid[self.row + 1][self.col]
+      if mid.is_blank() or mid.is_end() or mid.is_pending():
+        self.neighbors.append(mid)
+      if self.col > 0:
+        left = grid[self.row + 1][self.col - 1]
+        if left.is_blank() or left.is_end() or left.is_pending():
+          self.neighbors.append(left)
+      if self.col < self.total_rows - 1:
+        right = grid[self.row + 1][self.col + 1]
+        if right.is_blank() or right.is_end() or right.is_pending():
+          self.neighbors.append(right)
+    # left neighbor
+    if self.col > 0:
+      left = grid[self.row][self.col - 1]
+      if left.is_blank() or left.is_end() or left.is_pending():
+        self.neighbors.append(left)
+    # right neighbor
+    if self.col < self.total_rows - 1:
+      right = grid[self.row][self.col + 1]
+      if right.is_blank() or right.is_end() or right.is_pending():
+        self.neighbors.append(right)
+    return self.neighbors
+  
+  def getPath(self, grid):  
+    neighbors = []
+    # top neighbors 
+    if self.row > 0:
+      mid = grid[self.row - 1][self.col]
+      if mid.is_visited() or mid.is_start() :
+        neighbors.append(mid)
+      if self.col > 0:
+        left = grid[self.row - 1][self.col - 1]
+        if left.is_visited() or left.is_start() :
+          neighbors.append(left)
+      if self.col < self.total_rows - 1:
+        right = grid[self.row - 1][self.col + 1]
+        if right.is_visited() or right.is_start() :
+          neighbors.append(right)
+    # bottom neighbors
+    if self.row < self.total_rows - 1:
+      mid = grid[self.row + 1][self.col]
+      if mid.is_visited() or mid.is_start() :
+        neighbors.append(mid)
+      if self.col > 0:
+        left = grid[self.row + 1][self.col - 1]
+        if left.is_visited() or left.is_start() :
+          neighbors.append(left)
+      if self.col < self.total_rows - 1:
+        right = grid[self.row + 1][self.col + 1]
+        if right.is_visited() or right.is_start() :
+          neighbors.append(right)
+    # left neighbor
+    if self.col > 0:
+      left = grid[self.row][self.col - 1]
+      if left.is_visited() or left.is_start() :
+        neighbors.append(left)
+    # right neighbor
+    if self.col < self.total_rows - 1:
+      right = grid[self.row][self.col + 1]
+      if right.is_visited() or right.is_start() :
+        neighbors.append(right)
+    return neighbors  
+  
+  def __str__(self):
+    return f"({self.row}, {self.col})"
+  
+  def __repr__(self):
+    return f"({self.row}, {self.col})"
+        
+  
+def h(node : Node, nodeEnd : Node):
+  return np.sqrt((node.col - nodeEnd.col)**2 + (node.row - nodeEnd.row)**2)
+
+def draw_grid(win, rows, width):
+  gap = width // rows
+  l = [i * gap for i in range(rows)]
+  for i in l:
+    pygame.draw.line(win, GREY, (i, 0), (i, width))
+    pygame.draw.line(win, GREY, (0, i), (width, i))
+  
+  start = None
+  end = None
+  
+def mousePos(pos, rows, width):
+	gap = width // rows
+	y, x = pos
+
+	row = y // gap
+	col = x // gap
+
+	return row, col
+
+def draw(win, grid, rows, width):
+	win.fill(WHITE)
+
+	for row in grid:
+		for spot in row:
+			spot.draw(win)
+
+	draw_grid(win, rows, width)
+	pygame.display.update()
+ 
+
+def Astar(draw, start : Node, end : Node, grid):
+  start.distance = 0
+  pending = set() # dict neighbor : parent 
+  node = start
+  i = 0
+  while node != end:
+    neighbors : List[Node] = node.update_neighbors(grid)
+    i+=1
+    for neighbor in neighbors:
+      newDistance = node.distance + h(node, neighbor)
+      #nadpisujemy wartość
+      if newDistance < neighbor.distance:
+        neighbor.distance = newDistance
+        neighbor.heuristic = h(neighbor, end)
+        pending.add((neighbor, node))
+        if neighbor != end:
+          neighbor.make_pending()
+      elif newDistance == neighbor.distance and h(end, neighbor) < neighbor.heuristic:
+        neighbor.heuristic = h(neighbor, end)
+        pending.add((neighbor, node))
+        if neighbor != end:
+          neighbor.make_pending()
+      draw()
+    if node != start:
+      node.make_visited()
+    min = float('inf')
+    pair = None
+    minHeuristic = float('inf')
+    for p in pending:
+      newHeuristic = p[0].heuristic
+      newDistance = newHeuristic + p[0].distance
+      if newDistance < min:
+        min = newDistance
+        pair = p
+        minHeuristic = newHeuristic   
+      elif newDistance == min and newHeuristic < minHeuristic:
+        min = newDistance
+        pair = p
+        minHeuristic = newHeuristic
+    if pair is None:
+      return float('inf')
+      
+    pending.remove(pair)
+    node = pair[0]
+  res = node.distance
+  draw()
+  
+  # draw path
+  while node != start:
+    neighbors : List[Node] = node.getPath(grid)
+    min = float('inf')
+    pair = None
+    for neighbor in neighbors:
+      if neighbor.distance < min:
+        min = neighbor.distance
+        pair = (neighbor, node)
+    if pair is None:
+      break
+    node = pair[0]
+    if node != start:
+      node.make_path()
+  return res
 
 def main():
-  WIDTH = 800
-  WIN = pygame.display.set_mode((WIDTH, WIDTH))
-  pygame.display.set_caption("A* Pathfinding algorithm")
+  repeat = True
+  while repeat:
+    repeat = False
+    WIDTH = 800
+    rows = 50
+    WINDOW = pygame.display.set_mode((WIDTH, WIDTH))
+    pygame.display.set_caption("A* Pathfinding algorithm")
+    grid = np.zeros((rows, rows), dtype=Node)
+    for i in range(rows):
+      for j in range(rows):
+        grid[i][j] = Node(i, j, WIDTH // rows, rows)
+    start = False
+    end = False
+    run = True
+    while run:
+      draw(WINDOW, grid, rows, WIDTH)
+      # if x was clicked quit the game
+      for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+          run = False
 
+        # if left mouse button was clicked
+        if pygame.mouse.get_pressed()[0]:
+          pos = pygame.mouse.get_pos()
+          row, col = mousePos(pos, rows, WIDTH)
+          node : Node = grid[row][col]
+          # if we dont have start yet, set start
+          if not start and node != end:
+            start = node
+            start.make_start()
+          # if we dont have end yet, set end
+          elif not end and node != start:
+            end = node
+            end.make_end()
+          #if node is not start and not end, make it a barrier
+          elif node != end and node != start:
+            node.make_barrier()
 
+        # if right mouse button was clicked - reset the node
+        if pygame.mouse.get_pressed()[2]:
+          pos = pygame.mouse.get_pos()
+          row, col = mousePos(pos, rows, WIDTH)
+          node : Node = grid[row][col]
+          node.reset()
+          if node == start:
+            start = None
+          elif node == end:
+            end = None
+
+        # if space was clicked, run the algorithm
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and start and end:
+          length = Astar(lambda: draw(WINDOW, grid, rows, WIDTH), start, end, grid)
+          if length == float('inf'):
+            print("Nie znaleziono ścieżki")
+            pygame.display.set_caption("Nie znaleziono ścieżki")
+            break
+          print("Najkrótsza ścieżka ma długość: ", "{:.2f}".format(length))
+          pygame.display.set_caption("Najkrótsza ścieżka ma długość: {:.2f}".format(length))
+    pygame.quit()
 if __name__ == '__main__':
   main()
