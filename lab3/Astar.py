@@ -204,61 +204,47 @@ def Astar(draw, start : Node, end : Node, grid):
   pending = set() 
   node = start
   while node != end:
-    neighbors : List[Node] = node.update_neighbors(grid) # pobieramy nieodwiedzonych sąsiadów
+    neighbors : List[Node] = node.update_neighbors(grid) 
     for neighbor in neighbors:
-      newDistance = node.distance + d(node, neighbor) #dla każdego sąsiada jego odległość od początku
-      if newDistance < neighbor.distance: # zabezpieczenie, jeżeli był już pending
-        # natępuje tu wpisanie odległości od startu i szacowanej odległości do końca, oraz dodanie do pending
+      newDistance = node.distance + d(node, neighbor)
+      if newDistance < neighbor.distance: 
         neighbor.distance = newDistance
         neighbor.heuristic = h(neighbor, end)
         pending.add(neighbor)
-        #graficzne oznaczenie, że jest pending
         if neighbor != end:
           neighbor.make_pending()
-      #narysowanie zmian, nieistotne z kwestii algorytmu
       draw()
-    #kolejne oznaczenie dla grafiki, że sąsiedzi węzła zostali odwiedzeni (Czerwony kolor)
     if node != start:
       node.make_visited()
 
-    #poszukiwanie minimum funkcji f = g + h
     min = float('inf')
     newNode = None
     minHeuristic = float('inf')
     for p in pending:
       newHeuristic = p.heuristic
       newDistance = newHeuristic + p.distance
-      #jezeli znajdziemy minimum, to je przechowujemy
       if newDistance < min:
         min = newDistance
         newNode = p
         minHeuristic = newHeuristic
-      # charakteryzowanie, żeby najpierw szukał węzła o mniejszej heurystyce, w przypadku gdy odległości są równe,
-      # ponieważ ona szacuje koszt dotarcia   
       elif newDistance == min and newHeuristic < minHeuristic:
         min = newDistance
         newNode = p
         minHeuristic = newHeuristic
-    #jeżeli nie ma już węzłów do odwiedzenia, to kończymy
     if newNode is None:
       return float('inf'), []
       
     pending.remove(newNode)
     node = newNode
 
-  # część druga, rysowanie ścieżki i zwrot wyniku
   res = node.distance
   draw()
   
-  # draw path
   path = [end]
-  # pomysł - iteracyjnie prszechodzimy od końca, po wierzchołkach, które zostały odwiedzone 
-  # i dodajemy do ścieżki te z minimalnym dystansem do startu
   while node != start:
     neighbors : List[Node] = node.getPath(grid)
     min = float('inf')
     p = None
-    # szukamy minimum, do którego przejdziemy w następnym kroku
     for neighbor in neighbors:
       if neighbor.distance < min:
         min = neighbor.distance
@@ -269,7 +255,6 @@ def Astar(draw, start : Node, end : Node, grid):
     if node != start:
       node.make_path()
     path.append(node)
-  #zwróć długość ścieżki i ścieżkę
   return res, path[::-1]
 
 def main():

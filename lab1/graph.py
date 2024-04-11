@@ -8,6 +8,9 @@ class Graph:
         raise ValueError('Wrong data!')
     self.graph = dic
 
+  def nodes(self):
+    return self.graph.keys()
+  
   def dfs(self, n : node):
     self.visited = []
     self.__visitNode(n)
