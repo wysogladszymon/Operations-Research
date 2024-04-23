@@ -8,4 +8,5 @@ This are my reports from subject Operations Research on AGH University of Scienc
 <li><strong>Lab3:</strong> Shortest path in the graph: A* algorith</li>
 <li><strong>Lab4:</strong> Travelling salesman problem: 2-opt algorithm</li>
 <li><strong>Lab5:</strong> Net programming: PERT algorithm, Gantt's chart</li>
+<li><strong>Lab6:</strong> Allocation issue: <a href='https://github.com/wysogladszymon/Hungarian-Algorithm.git'> Hungarian Algorithm</a></li>
 </ul>
