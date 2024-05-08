@@ -10,5 +10,6 @@ This are my reports from subject Operations Research on AGH University of Scienc
 <li><strong>Lab5:</strong> Net programming: PERT algorithm, Gantt's chart</li>
 <li><strong>Lab6:</strong> Allocation issue: <a href='https://github.com/wysogladszymon/Hungarian-Algorithm.git'> Hungarian Algorithm (Group Project)</a>,  but mine is still here in dir: <i>lab 6</i></li>
 <li><strong>Lab7:</strong> Task scheduling problem: Johnsons'algorith, CDS sollution for more machines.</li>
+<li><strong>Lab8:</strong> Dynamic Programming: Integer Linear Loading Problem, Knapsack 0-1 problem.</li>
 
 </ul>
